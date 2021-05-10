@@ -1,7 +1,6 @@
 ﻿using System;
 using System.Net.Http;
 using System.Threading.Tasks;
-using Microsoft.Extensions.Options;
 
 namespace SAM_Console_Test
 {
@@ -19,9 +18,9 @@ namespace SAM_Console_Test
 
         public ApiClientOptions AppSettings { get; set; }
 
-        public ApiClient(IOptions<ApiClientOptions> secrets)
+        public ApiClient(ApiClientOptions secrets)
         {
-            AppSettings = secrets.Value;
+            AppSettings = secrets;
             _httpClient = new HttpClient();
 
             _client = new openapiClient(_httpClient)
