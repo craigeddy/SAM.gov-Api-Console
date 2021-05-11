@@ -496,13 +496,18 @@ namespace SAM_Console_Test
                             string responseText_ = ( response_.Content == null ) ? null : await response_.Content.ReadAsStringAsync().ConfigureAwait(false);
                             throw new ApiException("The resource you were trying to reach is not found", (int)response_.StatusCode, responseText_, headers_, null);
                         }
+                        else if (status_ == "429")
+                        {
+                            var responseData_ = response_.Content == null ? null : await response_.Content.ReadAsStringAsync().ConfigureAwait(false);
+                            throw new ApiException("Too many requests (" + (int)response_.StatusCode + ").", (int)response_.StatusCode, responseData_, headers_, null);
+                        }
                         else
-                        if (status_ != "200" && status_ != "204")
+                       if (status_ != "200" && status_ != "204")
                         {
                             var responseData_ = response_.Content == null ? null : await response_.Content.ReadAsStringAsync().ConfigureAwait(false); 
                             throw new ApiException("The HTTP status code of the response was not expected (" + (int)response_.StatusCode + ").", (int)response_.StatusCode, responseData_, headers_, null);
                         }
-                    }
+                   }
                     finally
                     {
                         if (response_ != null)
