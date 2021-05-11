@@ -1,6 +1,8 @@
 ﻿using System;
 using System.Data.SqlClient;
 using System.Diagnostics;
+using System.Linq;
+using System.Threading;
 using System.Threading.Tasks;
 using Insight.Database;
 using Microsoft.Extensions.Configuration;
@@ -19,13 +21,11 @@ namespace SAM_Console_Test
             var connectionString = AppConfig.GetConfiguration().GetConnectionString("fitdb");
             var database = new SqlConnectionStringBuilder(connectionString);
 
-            var x = new Stopwatch();
-            x.Start();
+            var partners = database.Connection()
+                .QuerySql<PartnerRecord>("SELECT * FROM Common.Partners")
+                .ToList();
             
-            var partners = database.Connection().QuerySql<PartnerRecord>("SELECT * FROM Common.Partners");
-            
-            x.Stop();
-            Console.WriteLine($"Loaded {partners.Count} partners in {x.Elapsed}");
+            Console.WriteLine($"Loaded {partners.Count}");
             Console.WriteLine();
 
             var response = await apiClient.GetEntityManagementDataUsingQueryAsync("(dbaName:'John Snow')");
@@ -34,9 +34,29 @@ namespace SAM_Console_Test
 
             Console.WriteLine();
 
-            response = await apiClient.GetEntityManagementDataByDunsAsync("195259502");
-            Console.WriteLine($"Found {response?.TotalRecords ?? 0} registration(s) by DUNS lookup");
-            response?.EntityData.ForEach(entity => Console.WriteLine($"Entity: {entity.EntityRegistration.LegalBusinessName}"));
+            partners.ForEach(partner =>
+            {
+                try
+                {
+                    response = apiClient.GetEntityManagementDataByDunsAsync(partner.DUNS).Result;
+                    
+                    if (response.EntityData.Any())
+                    {
+                        Console.WriteLine($"Partner DUNS {partner.DUNS} has UEID {response.EntityData.First().EntityRegistration.UeiSAM}");
+                    }
+                    else
+                    {
+                        Console.WriteLine($"Unable to find {partner.DUNS}");
+                    }
+
+                    Thread.Sleep(new TimeSpan(0,0,0,30));
+                }
+                catch (Exception ex)
+                {
+                    Console.WriteLine($"Exception with {partner.DUNS}: {ex.Message}");
+                }
+
+            });
         }
     }
 
